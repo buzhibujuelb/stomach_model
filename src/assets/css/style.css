@@ -2,9 +2,25 @@
     margin: 0;
     padding: 0;
 }
+
 body {
     background-color: #fff;
 }
-div {
-  width: 500px
+
+#prompt_msg {
+  width: 500px;
+  font-size: 25px;
+  position: relative;
+}
+
+#title {
+  width: 500px;
+  font-size: 30px;
+  position: relative;
+}
+
+#textbox {
+  position: absolute;
+  top: 200px;
+  left: 150px;
 }

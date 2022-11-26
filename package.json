@@ -2,7 +2,7 @@
   "name": "02",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
     "dev": "parcel src/index.html",
     "build": "parcel build src/index.html"
@@ -12,6 +12,7 @@
   "dependencies": {
     "color-convert": "^2.0.1",
     "dat.gui": "^0.7.9",
+    "fs": "^0.0.1-security",
     "gsap": "^3.11.3",
     "parcel": "^2.8.0",
     "public": "^0.1.5",
