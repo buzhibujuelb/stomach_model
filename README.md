@@ -4,6 +4,7 @@ To install enviroment:
 
 ```
 npm install
+npm audit fix --force
 ```
 
 To run:

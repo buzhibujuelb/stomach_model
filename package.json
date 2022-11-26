@@ -10,9 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "color-convert": "^2.0.1",
     "dat.gui": "^0.7.9",
     "gsap": "^3.11.3",
-    "parcel": "^1.12.4",
+    "parcel": "^2.8.0",
     "public": "^0.1.5",
     "three": "^0.146.0"
   },
