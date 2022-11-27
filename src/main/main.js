@@ -104,7 +104,7 @@ const interactGeometry1 = new THREE.SphereGeometry( 8, 15, 16 );
 const interactMaterial1 = new THREE.MeshPhongMaterial( { color: 0xffff00, opacity:1,transparent:true,emissive:0xffff00} );
 
 const config = require("./config.json");
-keys = config["keypoint"]
+var keys = config["keypoint"]
 for(var i=0; i <  keys.length; i++){
   const sphere = new THREE.Mesh( interactGeometry1, interactMaterial1 );
   sphere.position.set(keys[i]["pos"]["x"],keys[i]["pos"]["y"],keys[i]["pos"]["z"])
@@ -315,8 +315,8 @@ function cameraMove(){
   camera.lookAt(new THREE.Vector3(0, 0, 0)) //相机看向原点
 
 }
-info = document.getElementById("prompt_msg");
-tit = document.getElementById("title");
+var info = document.getElementById("prompt_msg");
+var tit = document.getElementById("title");
 function reset_info_msg(){
   console.log("reset info msg");
   info.innerText = config["default_msg"];
