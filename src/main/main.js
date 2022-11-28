@@ -46,9 +46,124 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 // 添加坐标轴辅助器
-/*const axesHelper = new THREE.AxesHelper(5);
-scene.add(axesHelper);*/
+/*
+const axesHelper = new THREE.AxesHelper(5);
+scene.add(axesHelper);
+*/
 
+
+function change_info(message, title){
+  scene.remove(lstmsg);
+  var msg = makeTextSprite( message, {"title":title} );
+  msg.position.set(70,0,120);
+  scene.add(msg);
+  lstmsg = msg;
+  //console.log(`add${message}`)
+}
+
+CanvasRenderingContext2D.prototype.wrapText = function (text, x, y, maxWidth, lineHeight) {
+  if (typeof text != 'string' || typeof x != 'number' || typeof y != 'number') {
+    return;
+  }
+
+  var context = this;
+  var canvas = context.canvas;
+
+  if (typeof maxWidth == 'undefined') {
+    maxWidth = (canvas && canvas.width) || 300;
+  }
+  if (typeof lineHeight == 'undefined') {
+    lineHeight = (canvas && parseInt(window.getComputedStyle(canvas).lineHeight)) || parseInt(window.getComputedStyle(document.body).lineHeight);
+  }
+
+  // 字符分隔为数组
+  var arrText = text.split('');
+  var line = '';
+
+  context.fillStyle = "green";
+  // 调试用，查看画布大小
+  context.strokeRect(0, 0, canvas.width, canvas.height)
+  context.fillStyle = "black";
+
+  for (var n = 0; n < arrText.length; n++) {
+    var testLine = line + arrText[n];
+    var metrics = context.measureText(testLine);
+    var testWidth = metrics.width;
+    if (testWidth > maxWidth && n > 0) {
+      context.fillText(line, x, y);
+      line = arrText[n];
+      y += lineHeight;
+    } else {
+      line = testLine;
+    }
+  }
+  context.fillText(line, x, y);
+};
+
+function makeTextSprite( message, parameters ){
+  if ( parameters === undefined ) parameters = {};
+
+  var fontface = parameters.hasOwnProperty("fontface") ? 
+    parameters["fontface"] : "Arial";
+  fontface="Consolas";
+  var title = parameters.hasOwnProperty("title") ? 
+    parameters["title"] : config["default_msg"];
+
+  var fontsize = parameters.hasOwnProperty("fontsize") ? 
+    parameters["fontsize"] : 24;
+
+  var borderThickness = parameters.hasOwnProperty("borderThickness") ? 
+    parameters["borderThickness"] : 4;
+
+  var borderColor = parameters.hasOwnProperty("borderColor") ?
+    parameters["borderColor"] : { r:0, g:0, b:0, a:1.0 };
+
+  var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
+    parameters["backgroundColor"] : { r:255, g:255, b:255, a:1.0 };
+
+  var lineHeight = parameters.hasOwnProperty("lineHeight") ?
+    parameters["lineHeight"] : 25;
+
+  //var canvas = document.createElement('canvas');
+
+  const canvas = document.getElementById('msg');
+  var context = canvas.getContext('2d');
+
+  canvas.width = 450;
+  // get size data (height depends only on font size)
+  context.font = fontsize + "px " + fontface;
+  var metrics = context.measureText( message );
+
+  var textWidth = metrics.width;
+
+  // background color
+  context.fillStyle   = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
+    + backgroundColor.b + "," + backgroundColor.a + ")";
+
+  context.lineWidth = borderThickness;
+
+  // text color
+  context.fillStyle = "rgba(0, 0, 0, 1.0)";
+
+  lines = Math.ceil(textWidth / canvas.width);
+  canvas.height = (2+lines)*(lineHeight+2);
+
+  context.font = "Bold " + fontsize + "px " + fontface;
+  context.fillText( title, borderThickness, borderThickness+lineHeight);
+  context.font = fontsize + "px " + fontface;
+  context.wrapText( message, borderThickness, borderThickness+2*lineHeight, canvas.width-2*borderThickness, lineHeight);
+
+  // canvas contents will be used for a texture
+  var texture = new THREE.Texture(canvas) 
+  texture.needsUpdate = true;
+
+  var spriteMaterial = new THREE.SpriteMaterial( 
+    { map: texture} );
+  var sprite = new THREE.Sprite( spriteMaterial );
+  //console.log(`100x${100*canvas.height/canvas.width}`);
+  sprite.scale.set(100,100*canvas.height/canvas.width,1);
+  return sprite;	
+}
 
 function render() {
   controls.update();
@@ -97,11 +212,10 @@ const point = new THREE.Vector3(camera.position.x, camera.position.y, camera.pos
 
 var rotateFlag = true;
 
-
-
 let interactPoint = [];
 const interactGeometry1 = new THREE.SphereGeometry( 8, 15, 16 );
 const interactMaterial1 = new THREE.MeshPhongMaterial( { color: 0xffff00, opacity:1,transparent:true,emissive:0xffff00} );
+const interactMaterial2 = new THREE.MeshPhongMaterial( { color: 0x000000, opacity:1,transparent:true,emissive:0x000000} );
 
 const config = require("./config.json");
 var keys = config["keypoint"]
@@ -111,7 +225,7 @@ for(var i=0; i <  keys.length; i++){
   interactPoint.push(sphere)
 }
 
-console.log(keys);
+//console.log(keys);
 
 var lightProgress = 1;
 var lightOver = false;
@@ -144,7 +258,7 @@ var group = new THREE.Object3D();
 var stomach = new THREE.Object3D();
 
 var mesh = new THREE.Mesh();
-let rotateObj = [];
+let rotateObj = new Set();
 var rotateOver = false;
 // 导入模型
 const fbxLoader = new FBXLoader();
@@ -176,6 +290,11 @@ const obj1 = fbxLoader.load(
 
     scene.add(mesh);
 
+    var msg = makeTextSprite( "", {"title":config["default_msg"]} );
+    msg.position.set(70,0,120);
+    scene.add(msg);
+    lstmsg=msg;
+
     function changePivot(obj){
       let center = new THREE.Vector3();
       obj.geometry.computeBoundingBox();
@@ -190,14 +309,17 @@ const obj1 = fbxLoader.load(
 
     //加载外部模型成功后，筛选出需要选择的物体，并且存入数组。
     scene.children.forEach(item => {
-      if (item.name.includes('stomach')) {
-        rotateObj.push(changePivot(item))
+      if (item.name.includes('stomach') ) {
+        rotateObj.add(changePivot(item))
       }
     })
 
+
+        let group=new THREE.Group();
     function rotateFbx(){
 
       if (rotateObj) {
+        /*
         rotateObj.forEach(item => {
 
           item.rotation.y += 0.005;
@@ -206,6 +328,16 @@ const obj1 = fbxLoader.load(
           }
 
         })
+        */
+        for(var x of rotateObj){
+          group.add(x);
+        }
+
+          group.rotation.y += 0.005;
+          if(group.rotation.y > Math.PI*2){
+            group.rotation.y = 0;
+          }
+        scene.add(group);
       }
 
     }
@@ -216,8 +348,8 @@ const obj1 = fbxLoader.load(
       if(!rotateFlag){
         if (rotateObj) {
           rotateObj.forEach(item => {
-            if(item.rotation.y <= Math.PI*2){
-              item.rotation.y+=0.1;
+            if(group.rotation.y <= Math.PI*2){
+              group.rotation.y+=0.1;
             }else{
               rotateOver = true;
               for(var i = 0; i < interactPoint.length; i++){
@@ -241,7 +373,6 @@ const obj1 = fbxLoader.load(
     move();
 
     function click(event){
-      console.log("click")
       pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
       pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
       // update the picking ray with the camera and pointer position
@@ -249,33 +380,33 @@ const obj1 = fbxLoader.load(
 
       // calculate objects intersecting the picking ray
       var intersects = raycaster.intersectObjects(scene.children);
-      console.log("children = ")
-      console.log(scene.children)
-      console.log("intersects = ")
-      console.log(intersects)
 
       if(intersects.length > 0){
 
-        //console.log(intersects, 'intersects');
-        //console.log(mesh.name);
-        //console.log(group);
-        //console.log(rotateObj[0].name);
         rotateFlag = false;
 
-        let flag=false;
-        for(let j=0;j < intersects.length; j++){
-          for(let i=0; i < interactPoint.length; i++)
+        for(let i=0; i < interactPoint.length; i++){
+          let flag=false;
+          for(let j=0;j < intersects.length; j++)
             if(intersects[j].object == interactPoint[i]){
               console.log("Geting information of " + i );
-              tit.innerText = keys[i]["name"];
-              info.innerText = keys[i]["desc"];
+              change_info(keys[i]["desc"],keys[i]["name"])
               flag=true;
               break;
             }
-          if(flag)break;
-        }
-        if(!flag){
-          reset_info_msg();
+          if(flag){
+            interactPoint[i].material = interactMaterial2;
+            //console.log(`rotateObj=${typeof rotateObj}`)
+            rotateObj.add(interactPoint[i])
+            for(let j=0;j<interactPoint.length; j++)if(j!=i){
+              interactPoint[j].material = interactMaterial1;
+              if(rotateObj.has(interactPoint[j])){
+                //console.log(`${j} GG`)
+                rotateObj.delete(interactPoint[j]);
+              }
+            }
+
+          }
         }
       }
 
@@ -315,13 +446,7 @@ function cameraMove(){
   camera.lookAt(new THREE.Vector3(0, 0, 0)) //相机看向原点
 
 }
-var info = document.getElementById("prompt_msg");
-var tit = document.getElementById("title");
-function reset_info_msg(){
-  console.log("reset info msg");
-  info.innerText = config["default_msg"];
-  tit.innerText = ""
-}
+var lstmsg;
 
 var buttonFunction = new function(){
   this.cameraInit = function(){
@@ -344,10 +469,10 @@ var buttonFunction = new function(){
     }
     rotateOver = false;
     for(var i = 0; i < interactPoint.length; i++)
-      scene.remove(interactPoint[i]);
+      if(interactPoint[i].material==interactMaterial1)
+        scene.remove(interactPoint[i]);
 
-    info.innerText = "";
-    tit.innerText = "";
+    //change_info("","")
     cameraInitFunction();
 
   }
